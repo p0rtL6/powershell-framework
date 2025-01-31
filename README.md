@@ -40,6 +40,7 @@ $commands = @{
                 Order = 0
                 Required = $false
                 Type = 'STRING'
+                Default = ''
             }
             'Group Name' = @{
                 Group = $true
@@ -98,6 +99,8 @@ Arguments = @{
 * [Type](#type)
 * [CustomType](#custom-type)
 * List `[bool]` - Does the argument take a list
+* [Default](#custom-defaults)
+* DefaultDescription `[string]` - Optional for the help menu
 
 ### Custom Requirements
 
@@ -138,6 +141,24 @@ This property can either be `'STRING', 'PATH', 'BOOLEAN', 'NUMBER'`, which will 
     # return ReturnType or $null if invalid
 }
 ```
+
+### Custom Defaults
+
+This property can either be any `[System.Object]` (typically the same as your "Type") or a `[ScriptBlock]`:
+
+``` PowerShell
+# Custom Script Block
+Default = {
+    param(
+        [Hashtable]$Arguments,
+        [Hashtable]$Flags
+    )
+
+    # return calculated default
+}
+```
+
+> Defaults are applied all together, so one default argument cannot rely on another
 
 ### Argument Groups
 ``` PowerShell

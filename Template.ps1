@@ -33,6 +33,30 @@ function Get-FlatArguments {
     return $flatArguments
 }
 
+function Show-Argument {
+    param (
+        [System.Collections.DictionaryEntry]$Argument,
+        [int]$Padding
+    )
+
+    $argumentOutputString = "      --$("$($argument.Key) <$($argument.Value['Type'])>".PadRight($padding)) $($argument.Value['Description'])"
+    if ($argument.Value.ContainsKey('Default')) {
+        if ($argument.Value['Default'] -is [System.Management.Automation.ScriptBlock]) {
+            if ($argument.Value.ContainsKey('DefaultDescription')) {
+                $argumentOutputString = $argumentOutputString + " (default: $($argument.Value['DefaultDescription']))"
+            }
+            else {
+                $argumentOutputString = $argumentOutputString + " (default: <not specified>)"
+            }
+        }
+        else {
+            $argumentOutputString = $argumentOutputString + " (default: $($argument.Value['Default']))"
+        }
+    }
+
+    Write-Host $argumentOutputString
+}
+
 function Show-HelpMenu {
     param (
         [Parameter(Mandatory = $False)]
@@ -118,7 +142,7 @@ function Show-HelpMenu {
 
                         $groupArguments = $group['Arguments'].GetEnumerator() | Sort-Object { $_.Value['Order'] }
                         foreach ($groupArgument in $groupArguments) {
-                            Write-Host "      --$("$($groupArgument.Key) <$($groupArgument.Value['Type'])>".PadRight($helpMenuArgsAndFlagsPadding)) $($groupArgument.Value['Description'])"
+                            Show-Argument -Argument $groupArgument -Padding $helpMenuArgsAndFlagsPadding
                         }
                     }
                 }
@@ -126,7 +150,7 @@ function Show-HelpMenu {
                     if ($lastItemWasGroup) {
                         Write-Host ''
                     }
-                    Write-Host "    --$("$($argument.Key) <$($argument.Value['Type'])>".PadRight($helpMenuArgsAndFlagsPadding + 2)) $($argument.Value['Description'])"
+                    Show-Argument -Argument $argument -Padding $helpMenuArgsAndFlagsPadding + 2
                 }
             }
             Write-Host ''
@@ -299,6 +323,22 @@ foreach ($flagName in $commands[$selectedCommand]['Flags'].Keys) {
     if (-not $selectedFlags.ContainsKey($flagName)) {
         $selectedFlags[$flagName] = $False
     }
+}
+
+$defaultArguments = @{}
+foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {
+    if ($argument.Value.ContainsKey('Default')) {
+        if ($argument.Value['Default'] -is [System.Management.Automation.ScriptBlock]) {
+            $defaultArguments[$argument.Key] = & $argument.Value['Default'] -Arguments $selectedArguments -Flags $selectedFlags
+        }
+        else {
+            $defaultArguments[$argument.Key] = $argument.Value['Default']
+        }
+    }
+}
+
+foreach ($defaultArgument in $defaultArguments.GetEnumerator()) {
+    $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
 }
 
 foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {

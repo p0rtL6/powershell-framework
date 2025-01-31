@@ -45,10 +45,41 @@ $commands = @{
                 Type        = 'NUMBER'
                 List        = $true
             }
+            'default-argument'    = @{
+                Description = 'Argument with default value'
+                Order       = 4
+                Required    = $false
+                Type        = 'STRING'
+                # Define a basic default argument
+                Default     = 'This is a default value!'
+            }
+            'custom-default'      = @{
+                Description        = 'Argument with default value'
+                Order              = 5
+                Required           = $false
+                Type               = 'STRING'
+                # Use this with the below to provide extra detail in the help menu
+                DefaultDescription = 'Defaults to show if "example-flag-2" was set'
+                # Default can also be a script block that calculates a default from the rest of the arguments and flags
+                # Note that defaults are applied all at once after the rest of the arguments are parsed, meaning you cannot make one default argument rely on another
+                Default            = {
+                    param(
+                        [hashtable]$Arguments,
+                        [hashtable]$Flags
+                    )
+
+                    if ($Flags['example-flag-2']) {
+                        return 'The example flag 2 was set'
+                    }
+                    else {
+                        return 'The example flag 2 was not set'
+                    }
+                }
+            }
             # Use this when you have complex requirements, takes Arguments and Flags as params, wow! (make sure to return a boolean)
             'custom-requirements' = @{
                 Description         = 'This command has a custom requirement block'
-                Order               = 4
+                Order               = 6
                 # Optionally you can provide a description for your custom script block
                 RequiredDescription = 'Checks if the -example-flag is set'
                 Required            = {
@@ -64,7 +95,7 @@ $commands = @{
             }
             'custom-type'         = @{
                 Description = 'Example basic optional argument'
-                Order       = 5
+                Order       = 7
                 Required    = $false
                 # You can specify any string name you want for the type (this is just for display)
                 Type        = 'NAME/VALUE'
@@ -102,7 +133,7 @@ $commands = @{
                 # You can also set custom requirement script blocks here like above
                 Required  = $true
                 Exclusive = $false
-                Order     = 6
+                Order     = 8
                 Arguments = @{
                     'required-group-1' = @{
                         Description = 'Either this or required-group-2 are required (or both)'
@@ -122,7 +153,7 @@ $commands = @{
                 Group     = $true
                 Required  = $false
                 Exclusive = $true
-                Order     = 7
+                Order     = 8
                 Arguments = @{
                     'exclusive-group-1' = @{
                         Description = 'Either this or exclusive-group-2 are required (not both)'
@@ -139,9 +170,13 @@ $commands = @{
         }
         # Flags are prefixed by -
         Flags       = @{
-            'example-flag' = @{
+            'example-flag'   = @{
                 Description = 'Example flag'
                 Order       = 0
+            }
+            'example-flag-2' = @{
+                Description = 'See what happens to "custom-default" when you set this!'
+                Order       = 1
             }
         }
     }
@@ -195,6 +230,14 @@ function example-command {
         Write-Host "Custom type value: $($customType['value'])"
     }
 
+    if ($arguments.ContainsKey('default-argument')) {
+        Write-Host "Found default argument: $($arguments['default-argument'])"
+    }
+
+    if ($arguments.ContainsKey('custom-default')) {
+        Write-Host "Found default argument, this was calculated dynamically: $($arguments['custom-default'])"
+    }
+
     # Flags do not need to be checked with "ContainsKey" as the ones not specified are all initialized to $false, simply check them as booleans
     if ($flags['example-flag']) {
         Write-Host 'Example flag is set!'
@@ -227,6 +270,30 @@ function Get-FlatArguments {
     }
 
     return $flatArguments
+}
+
+function Show-Argument {
+    param (
+        [System.Collections.DictionaryEntry]$Argument,
+        [int]$Padding
+    )
+
+    $argumentOutputString = "      --$("$($argument.Key) <$($argument.Value['Type'])>".PadRight($padding)) $($argument.Value['Description'])"
+    if ($argument.Value.ContainsKey('Default')) {
+        if ($argument.Value['Default'] -is [System.Management.Automation.ScriptBlock]) {
+            if ($argument.Value.ContainsKey('DefaultDescription')) {
+                $argumentOutputString = $argumentOutputString + " (default: $($argument.Value['DefaultDescription']))"
+            }
+            else {
+                $argumentOutputString = $argumentOutputString + " (default: <not specified>)"
+            }
+        }
+        else {
+            $argumentOutputString = $argumentOutputString + " (default: $($argument.Value['Default']))"
+        }
+    }
+
+    Write-Host $argumentOutputString
 }
 
 function Show-HelpMenu {
@@ -324,7 +391,7 @@ function Show-HelpMenu {
 
                         $groupArguments = $group['Arguments'].GetEnumerator() | Sort-Object { $_.Value['Order'] }
                         foreach ($groupArgument in $groupArguments) {
-                            Write-Host "      --$("$($groupArgument.Key) <$($groupArgument.Value['Type'])>".PadRight($helpMenuArgsAndFlagsPadding)) $($groupArgument.Value['Description'])"
+                            Show-Argument -Argument $groupArgument -Padding $helpMenuArgsAndFlagsPadding
                         }
                     }
                 }
@@ -332,7 +399,7 @@ function Show-HelpMenu {
                     if ($lastItemWasGroup) {
                         Write-Host ''
                     }
-                    Write-Host "    --$("$($argument.Key) <$($argument.Value['Type'])>".PadRight($helpMenuArgsAndFlagsPadding + 2)) $($argument.Value['Description'])"
+                    Show-Argument -Argument $argument -Padding $helpMenuArgsAndFlagsPadding + 2
                 }
             }
             Write-Host ''
@@ -535,6 +602,24 @@ foreach ($flagName in $commands[$selectedCommand]['Flags'].Keys) {
     if (-not $selectedFlags.ContainsKey($flagName)) {
         $selectedFlags[$flagName] = $False
     }
+}
+
+# Parse default arguments
+$defaultArguments = @{}
+foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {
+    if ($argument.Value.ContainsKey('Default')) {
+        if ($argument.Value['Default'] -is [System.Management.Automation.ScriptBlock]) {
+            $defaultArguments[$argument.Key] = & $argument.Value['Default'] -Arguments $selectedArguments -Flags $selectedFlags
+        }
+        else {
+            $defaultArguments[$argument.Key] = $argument.Value['Default']
+        }
+    }
+}
+
+# Apply default arguments
+foreach ($defaultArgument in $defaultArguments.GetEnumerator()) {
+    $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
 }
 
 # Verify the requirements for arguments are met
