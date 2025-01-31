@@ -15,6 +15,7 @@ This framework was designed for cases where importing a seperate module is not v
 * Customizable help menu
 * User-defined commands with matching functions
 * Custom arguments
+    * Default argument values
     * Required arguments
     * Argument groups for organization, including exclusive groups
     * Support for lists
