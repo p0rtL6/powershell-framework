@@ -163,6 +163,7 @@ function Show-HelpMenu {
                 $flagValue = $command.Value['Flags'][$flagName]
                 Write-Host "    -$($flagName.PadRight($helpMenuArgsAndFlagsPadding + 1)) $($flagValue['Description'])"
             }
+            Write-Host ''
         }
     }
     Write-Host ''
