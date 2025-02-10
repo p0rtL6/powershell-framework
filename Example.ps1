@@ -620,7 +620,9 @@ foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {
 
 # Apply default arguments
 foreach ($defaultArgument in $defaultArguments.GetEnumerator()) {
-    $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
+    if (-not $selectedArguments.ContainsKey($defaultArgument.Key)) {
+        $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
+    }
 }
 
 # Verify the requirements for arguments are met

@@ -339,7 +339,9 @@ foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {
 }
 
 foreach ($defaultArgument in $defaultArguments.GetEnumerator()) {
-    $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
+    if (-not $selectedArguments.ContainsKey($defaultArgument.Key)) {
+        $selectedArguments[$defaultArgument.Key] = $defaultArgument.Value
+    }
 }
 
 foreach ($argument in $flattenedCommandArguments.GetEnumerator()) {
