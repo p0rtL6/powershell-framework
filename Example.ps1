@@ -28,9 +28,16 @@ $commands = @{
                 Required    = $false
                 Type        = 'STRING'
             }
+            'path-argument' = @{
+                Description = 'Example path argument'
+                Order = 2
+                Required = $false
+                # Path arguments are resolved at parse-time. This means if you specify something like a local path (.\ or ./), it will resolve it to the full path before running the command incase you change the working dir
+                Type = 'PATH'
+            }
             'string-list'         = @{
                 Description = 'Example string list argument'
-                Order       = 2
+                Order       = 3
                 Required    = $false
                 Type        = 'STRING'
                 # If you want to take a list, specify the List property, it will try and parse a comma seperated list: "1,2,3" (no spaces)
@@ -40,14 +47,14 @@ $commands = @{
             }
             'number-list'         = @{
                 Description = 'Example number list argument'
-                Order       = 3
+                Order       = 4
                 Required    = $false
                 Type        = 'NUMBER'
                 List        = $true
             }
             'default-argument'    = @{
                 Description = 'Argument with default value'
-                Order       = 4
+                Order       = 5
                 Required    = $false
                 Type        = 'STRING'
                 # Define a basic default argument
@@ -55,7 +62,7 @@ $commands = @{
             }
             'custom-default'      = @{
                 Description        = 'Argument with default value'
-                Order              = 5
+                Order              = 6
                 Required           = $false
                 Type               = 'STRING'
                 # Use this with the below to provide extra detail in the help menu
@@ -79,7 +86,7 @@ $commands = @{
             # Use this when you have complex requirements, takes Arguments and Flags as params, wow! (make sure to return a boolean)
             'custom-requirements' = @{
                 Description         = 'This command has a custom requirement block'
-                Order               = 6
+                Order               = 7
                 # Optionally you can provide a description for your custom script block
                 RequiredDescription = 'Checks if the -example-flag is set'
                 Required            = {
@@ -95,7 +102,7 @@ $commands = @{
             }
             'custom-type'         = @{
                 Description = 'Example basic optional argument'
-                Order       = 7
+                Order       = 8
                 Required    = $false
                 # You can specify any string name you want for the type (this is just for display)
                 Type        = 'NAME/VALUE'
@@ -133,7 +140,7 @@ $commands = @{
                 # You can also set custom requirement script blocks here like above
                 Required  = $true
                 Exclusive = $false
-                Order     = 8
+                Order     = 9
                 Arguments = @{
                     'required-group-1' = @{
                         Description = 'Either this or required-group-2 are required (or both)'
@@ -153,7 +160,7 @@ $commands = @{
                 Group     = $true
                 Required  = $false
                 Exclusive = $true
-                Order     = 8
+                Order     = 10
                 Arguments = @{
                     'exclusive-group-1' = @{
                         Description = 'Either this or exclusive-group-2 are required (not both)'
@@ -203,6 +210,10 @@ function example-command {
     # Make sure to check if arguments are specified, they are possibly null!
     if ($arguments.ContainsKey('required')) {
         Write-Host "Value for required argument: $($arguments['required'])"
+    }
+
+    if ($arguments.ContainsKey('path-argument')) {
+        Write-Host "Resolved path argument: $($arguments['path-argument'])"
     }
 
     # List was set, we can iterate over it now
@@ -529,7 +540,7 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
                         $parentDir = Split-Path -Path $value -Parent
             
                         if ((-not $parentDir) -or ($parentDir -and (Test-Path -Path $parentDir))) {
-                            return $value -as [string]
+                            return (Resolve-Path -Path $value).Path -as [string]
                         }
                     }
                 }

@@ -263,7 +263,7 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
                         $parentDir = Split-Path -Path $value -Parent
             
                         if ((-not $parentDir) -or ($parentDir -and (Test-Path -Path $parentDir))) {
-                            return $value -as [string]
+                            return (Resolve-Path -Path $value).Path -as [string]
                         }
                     }
                 }
