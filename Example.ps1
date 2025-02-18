@@ -448,7 +448,12 @@ $selectedFlags = @{}
 
 # Iterating over command line arguments
 for ($i = 0; $i -lt $Args.Count; $i++) {
-    if ($Args[$i] -eq '-h' -or $Args[$i] -eq '--help') {
+    if ($i -eq 0) {
+        # First cmd arg is the command
+        $selectedCommand = $Args[0]
+        $flattenedCommandArguments = Get-FlatArguments -CommandName $Args[0]
+    }
+    elseif ($Args -contains '-h' -or $Args -contains '--help') {
         if ($selectedCommand) {
             # Shows sub-menu for just the selected command
             Show-HelpMenu -SelectedCommand $selectedCommand
@@ -457,11 +462,6 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
             Show-HelpMenu
         }
         exit 0
-    }
-    elseif ($i -eq 0) {
-        # First cmd arg is the command
-        $selectedCommand = $Args[0]
-        $flattenedCommandArguments = Get-FlatArguments -CommandName $Args[0]
     }
     elseif ($Args[$i].StartsWith('--')) {
         # Arguments all start with --

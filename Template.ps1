@@ -184,7 +184,11 @@ $selectedArguments = @{}
 $selectedFlags = @{}
 
 for ($i = 0; $i -lt $Args.Count; $i++) {
-    if ($Args[$i] -eq '-h' -or $Args[$i] -eq '--help') {
+    if ($i -eq 0) {
+        $selectedCommand = $Args[0]
+        $flattenedCommandArguments = Get-FlatArguments -CommandName $Args[0]
+    }
+    elseif ($Args -contains '-h' -or $Args -contains '--help') {
         if ($selectedCommand) {
             Show-HelpMenu -SelectedCommand $selectedCommand
         }
@@ -192,10 +196,6 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
             Show-HelpMenu
         }
         exit 0
-    }
-    elseif ($i -eq 0) {
-        $selectedCommand = $Args[0]
-        $flattenedCommandArguments = Get-FlatArguments -CommandName $Args[0]
     }
     elseif ($Args[$i].StartsWith('--')) {
         $arg = $Args[$i].Substring(2)
