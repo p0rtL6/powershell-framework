@@ -302,7 +302,11 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
         }
         
         if ($null -eq $parsedValue) {
-            throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) list (Use -h or --help for help)"
+            if ($shouldBeList) {
+                throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) list (Use -h or --help for help)"
+            } else {
+                throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) (Use -h or --help for help)"
+            }
         }
         
         $selectedArguments[$keyword] = $parsedValue
