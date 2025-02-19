@@ -28,12 +28,12 @@ $commands = @{
                 Required    = $false
                 Type        = 'STRING'
             }
-            'path-argument' = @{
+            'path-argument'       = @{
                 Description = 'Example path argument'
-                Order = 2
-                Required = $false
+                Order       = 2
+                Required    = $false
                 # Path arguments are resolved at parse-time. This means if you specify something like a local path (.\ or ./), it will resolve it to the full path before running the command incase you change the working dir
-                Type = 'PATH'
+                Type        = 'PATH'
             }
             'string-list'         = @{
                 Description = 'Example string list argument'
@@ -578,7 +578,13 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
             # User provided only one item
             if ($shouldBeList) {
                 # The output should be a list, so we make one with one element and cast it
-                $parsedValue = @(& $parser -Value $value) -as $targetArrayType
+                $parsedItem = & $parser -Value $value
+                if ($null -ne $parsedItem) {
+                    $parsedValue = @($parsedItem) -as $targetArrayType
+                }
+                else {
+                    throw "Argument value `"$value`" is not a valid $($argumentTypeString.ToLower()) (Use -h or --help for help)"
+                }
             }
             else {
                 # The output should just be one value, cast it
@@ -590,7 +596,8 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
         if ($null -eq $parsedValue) {
             if ($shouldBeList) {
                 throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) list (Use -h or --help for help)"
-            } else {
+            }
+            else {
                 throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) (Use -h or --help for help)"
             }
         }

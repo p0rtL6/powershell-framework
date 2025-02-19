@@ -294,7 +294,13 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
         }
         else {
             if ($shouldBeList) {
-                $parsedValue = @(& $parser -Value $value) -as $targetArrayType
+                $parsedItem = & $parser -Value $value
+                if ($null -ne $parsedItem) {
+                    $parsedValue = @($parsedItem) -as $targetArrayType
+                }
+                else {
+                    throw "Argument value `"$value`" is not a valid $($argumentTypeString.ToLower()) (Use -h or --help for help)"
+                }
             }
             else {
                 $parsedValue = & $parser -Value $value
@@ -304,7 +310,8 @@ for ($i = 0; $i -lt $Args.Count; $i++) {
         if ($null -eq $parsedValue) {
             if ($shouldBeList) {
                 throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) list (Use -h or --help for help)"
-            } else {
+            }
+            else {
                 throw "Argument value `"$value`" for `"$keyword`" is not a valid $($argumentTypeString.ToLower()) (Use -h or --help for help)"
             }
         }
